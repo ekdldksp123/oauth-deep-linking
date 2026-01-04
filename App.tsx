@@ -1,26 +1,15 @@
 
 import 'react-native-url-polyfill/auto'
 
-import { useState, useEffect } from 'react'
-import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
-import { View, Text, StyleSheet } from 'react-native'
-import { Session } from '@supabase/supabase-js'
+import { View, Text, StyleSheet, StatusBar } from 'react-native'
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-  }, [])
   return (
-    <View>
+    <View style={styles.container}>
+      <Text>Welcome, please sign in!</Text>
       <Auth />
-      {session && session.user && <Text>{session.user.id}</Text>}
+      <StatusBar />
     </View>
   )
 }
@@ -28,6 +17,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: '100%',
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',

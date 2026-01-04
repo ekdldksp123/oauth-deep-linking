@@ -1,83 +1,79 @@
-import React, { useState } from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
-import { supabase } from '../lib/supabase'
-import { Button, Input } from '@rneui/themed'
+import { Button } from "react-native";
+import { makeRedirectUri } from "expo-auth-session";
+import * as QueryParams from "expo-auth-session/build/QueryParams";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import { supabase } from "../lib/supabase";
+
+WebBrowser.maybeCompleteAuthSession(); // required for web only
+const redirectTo = makeRedirectUri();
+
+console.log('redirectTo :: ', redirectTo);
+
+const createSessionFromUrl = async (url: string) => {
+  const { params, errorCode } = QueryParams.getQueryParams(url);
+
+  if (errorCode) throw new Error(errorCode);
+  const { access_token, refresh_token } = params;
+
+  if (!access_token) return;
+
+  const { data, error } = await supabase.auth.setSession({
+    access_token,
+    refresh_token,
+  });
+  if (error) throw error;
+  console.log('session :: ', data.session);
+  return data.session;
+};
+
+const performOAuth = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error) throw error;
+
+  const res = await WebBrowser.openAuthSessionAsync(
+    data?.url ?? "",
+    redirectTo
+  );
+
+  if (res.type === "success") {
+    const { url } = res;
+    console.log('url :: ', url);
+    await createSessionFromUrl(url);
+  }
+};
+
+const sendMagicLink = async () => {
+  const email = process.env.EXPO_PUBLIC_USER_EMAIL || '';
+
+  console.log('email to send magic link :: ', email);
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: redirectTo,
+    },
+  });
+
+  if (error) throw error;
+  // Email sent.
+};
 
 export default function Auth() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  async function signInWithEmail() {
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
-
-    if (error) Alert.alert(error.message)
-    setLoading(false)
-  }
-
-  async function signUpWithEmail() {
-    setLoading(true)
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    })
-
-    if (error) Alert.alert(error.message)
-    if (!session) Alert.alert('Please check your inbox for email verification!')
-    setLoading(false)
-  }
+  // Handle linking into app from email app.
+  const url = Linking.useURL();
+  console.log('url :: ', url);
+  if (url) createSessionFromUrl(url);
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
-          label="Email"
-          leftIcon={{ type: 'font-awesome', name: 'envelope' }}
-          onChangeText={(text) => setEmail(text)}
-          value={email}
-          placeholder="email@address.com"
-          autoCapitalize={'none'}
-        />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Input
-          label="Password"
-          leftIcon={{ type: 'font-awesome', name: 'lock' }}
-          onChangeText={(text) => setPassword(text)}
-          value={password}
-          secureTextEntry={true}
-          placeholder="Password"
-          autoCapitalize={'none'}
-        />
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button title="Sign in" disabled={loading} onPress={() => signInWithEmail()} />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button title="Sign up" disabled={loading} onPress={() => signUpWithEmail()} />
-      </View>
-    </View>
-  )
+    <>
+      <Button onPress={performOAuth} title="Sign in with GitHub" />
+      <Button onPress={sendMagicLink} title="Send Magic Link" />
+    </>
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 40,
-    padding: 12,
-  },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
-  },
-  mt20: {
-    marginTop: 20,
-  },
-})
