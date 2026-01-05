@@ -1,22 +1,24 @@
 {
   "expo": {
-    "scheme": "com.supabase",
+    "scheme": "com.simple",
     "name": "oauth-deep-linking",
     "slug": "oauth-deep-linking",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.simple.oauthdeeplinking"
     },
     "android": {
+      "package": "com.simple.oauthdeeplinking",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
